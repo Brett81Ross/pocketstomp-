@@ -42,7 +42,7 @@ export default function Home() {
 
   return (
     <main style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '600px', margin: '0 auto', color: '#333' }}>
-      <h1 style={{ textAlign: 'center' }}>🛹 PocketStomp</h1>
+      <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>🛹 PocketStomp</h1>
       
       {!isTracking && (
         <div style={{ marginBottom: '20px' }}>
@@ -50,7 +50,7 @@ export default function Home() {
           <select 
             value={selectedTrick} 
             onChange={(e) => setSelectedTrick(e.target.value)}
-            style={{ width: '100%', padding: '12px', fontSize: '16px', borderRadius: '8px', border: '1px solid #ccc' }}
+            style={{ width: '100%', padding: '12px', fontSize: '16px', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: '#fff' }}
           >
             {TRICK_DICTIONARY.map(trick => (
               <option key={trick} value={trick}>{trick}</option>
@@ -92,7 +92,7 @@ export default function Home() {
       </div>
 
       <div style={{ marginTop: '30px' }}>
-        <h2>Session Scoreboard:</h2>
+        <h2 style={{ fontSize: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>Session Scoreboard:</h2>
         {tricks.length === 0 && <p style={{ color: '#888' }}>Call a trick, drop phone in pocket, and test the grade.</p>}
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {tricks.map((trick, index) => (
