@@ -55,15 +55,21 @@ function startListening(threshold, onTrickDetected) {
         setTimeout(() => {
           isRecordingAirtime = false;
           
-          // Grading Math: Combine Pop Force and Rotation Speed
-          let rawScore = (totalAcc * 1.5) + (maxRoll / 10) + (maxYaw / 10);
+          // GRADING MATH FIX
+          // 1. Pop Force: Usually between 15-35 m/s^2. We multiply by 1.2.
+          let popScore = totalAcc * 1.2; 
+          
+          // 2. Spin Score: Gyroscopes can hit 1500+ deg/sec. We divide by 45 to keep it grounded.
+          let spinScore = (maxRoll + maxYaw) / 45; 
+          
+          let rawScore = popScore + spinScore;
           
           // Cap score at 99.9 for realistic display
           let finalScore = Math.min(rawScore, 99.9).toFixed(1);
           
-          // Assign Letter Grade
+          // Assign Letter Grade based on the new, harder math
           let grade = "C";
-          if (finalScore >= 85) grade = "S";       // S-Tier (Pro level pop)
+          if (finalScore >= 85) grade = "S";       // S-Tier (Pro level pop & speed)
           else if (finalScore >= 70) grade = "A";  // A-Tier (Clean)
           else if (finalScore >= 50) grade = "B";  // B-Tier (Average)
 
