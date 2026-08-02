@@ -1,8 +1,10 @@
 let activeListener = null;
 let lastTriggerTime = 0;
 let isRecordingAirtime = false;
-let maxRoll = 0; 
-let maxYaw = 0;
+
+// Track both positive and negative rotation to determine trick direction
+let maxRoll = 0, minRoll = 0; 
+let maxYaw = 0, minYaw = 0;
 
 export function requestSensorAccess(threshold, onTrickDetected) {
   if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -31,12 +33,15 @@ function startListening(threshold, onTrickDetected) {
     
     if (!acc || !gyro) return;
 
-    const currentRoll = Math.abs(gyro.alpha || 0); 
-    const currentYaw = Math.abs(gyro.gamma || 0);  
+    // DeviceMotionEvent axes: gamma = Roll (Flips), alpha = Yaw (Shuvits/Spins)
+    const currentRoll = gyro.gamma || 0; 
+    const currentYaw = gyro.alpha || 0;  
 
     if (isRecordingAirtime) {
       if (currentRoll > maxRoll) maxRoll = currentRoll;
+      if (currentRoll < minRoll) minRoll = currentRoll;
       if (currentYaw > maxYaw) maxYaw = currentYaw;
+      if (currentYaw < minYaw) minYaw = currentYaw;
       return; 
     }
 
@@ -49,31 +54,56 @@ function startListening(threshold, onTrickDetected) {
         lastTriggerTime = now;
         isRecordingAirtime = true;
         
-        maxRoll = 0;
-        maxYaw = 0;
+        // Reset rotational trackers for the new pop
+        maxRoll = 0; minRoll = 0;
+        maxYaw = 0; minYaw = 0;
 
         setTimeout(() => {
           isRecordingAirtime = false;
           
-          // GRADING MATH FIX
-          // 1. Pop Force: Usually between 15-35 m/s^2. We multiply by 1.2.
+          // Find the dominant rotation direction
+          let domRoll = Math.abs(maxRoll) > Math.abs(minRoll) ? maxRoll : minRoll;
+          let domYaw = Math.abs(maxYaw) > Math.abs(minYaw) ? maxYaw : minYaw;
+          
+          let rollMag = Math.abs(domRoll);
+          let yawMag = Math.abs(domYaw);
+
+          // 1. TRICK CLASSIFICATION MATRIX
+          let trickName = "Ollie";
+          let flipThreshold = 150; // deg/sec required to count as a flip
+          let spinThreshold = 150; // deg/sec required to count as a spin
+
+          if (rollMag > flipThreshold && yawMag > spinThreshold) {
+             // FLIP + SPIN COMBOS
+             if (domRoll > 0 && domYaw > 0) trickName = "Hardflip / FS Flip";
+             else if (domRoll > 0 && domYaw < 0) trickName = "360 Flip / Varial";
+             else if (domRoll < 0 && domYaw < 0) trickName = "Inward Heel / BS Heel";
+             else if (domRoll < 0 && domYaw > 0) trickName = "Laser Flip / Varial Heel";
+          } else if (rollMag > flipThreshold) {
+             // JUST FLIPS
+             if (domRoll > 0) trickName = "Kickflip";
+             else trickName = "Heelflip";
+          } else if (yawMag > spinThreshold) {
+             // JUST SPINS
+             if (domYaw > 0) trickName = "FS Shuvit / FS 180";
+             else trickName = "Pop Shuvit / BS 180";
+          } else {
+             trickName = "Ollie";
+          }
+          
+          // 2. GRADING MATH
           let popScore = totalAcc * 1.2; 
-          
-          // 2. Spin Score: Gyroscopes can hit 1500+ deg/sec. We divide by 45 to keep it grounded.
-          let spinScore = (maxRoll + maxYaw) / 45; 
-          
+          let spinScore = (rollMag + yawMag) / 45; 
           let rawScore = popScore + spinScore;
-          
-          // Cap score at 99.9 for realistic display
           let finalScore = Math.min(rawScore, 99.9).toFixed(1);
           
-          // Assign Letter Grade based on the new, harder math
           let grade = "C";
-          if (finalScore >= 85) grade = "S";       // S-Tier (Pro level pop & speed)
-          else if (finalScore >= 70) grade = "A";  // A-Tier (Clean)
-          else if (finalScore >= 50) grade = "B";  // B-Tier (Average)
+          if (finalScore >= 85) grade = "S";       
+          else if (finalScore >= 70) grade = "A";  
+          else if (finalScore >= 50) grade = "B";  
 
           onTrickDetected({
+            name: trickName,
             force: totalAcc.toFixed(2),
             score: finalScore,
             grade: grade,
