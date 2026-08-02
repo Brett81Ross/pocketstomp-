@@ -1,0 +1,32 @@
+.coach {
+  border-color: #3d4720;
+  background: linear-gradient(135deg, #171b11, #101211);
+}
+.coachModes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-top: 18px;
+}
+.coachModes button,
+.testAudio {
+  border: 1px solid #363b3e;
+  background: #0d0f10;
+  color: #777;
+  padding: 11px 6px;
+  font: 800 12px "Barlow Condensed";
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.coachModes button.selected {
+  background: var(--acid);
+  border-color: var(--acid);
+  color: #090a0b;
+}
+.testAudio {
+  width: 100%;
+  margin-top: 13px;
+  color: #e7e9e4;
+  border-color: #555;
+}
+.coach > .heading > strong { font-size: 23px; }
