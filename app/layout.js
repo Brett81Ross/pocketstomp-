@@ -1,10 +1,12 @@
 import DemoHelp from './DemoHelp';
+import NativeInstall from './NativeInstall';
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body style={{ margin: 0, padding: 0 }}>
         {children}
+        <NativeInstall />
         <DemoHelp />
         <footer
           style={{
@@ -25,5 +27,5 @@ export default function RootLayout({ children }) {
         </footer>
       </body>
     </html>
-  )
+  );
 }
