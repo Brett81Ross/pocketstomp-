@@ -36,6 +36,9 @@ jobs:
       - name: Apply deterministic source fixes
         run: python tools/apply-v2-recovery-fixes.py
 
+      - name: Apply deterministic backup UI
+        run: python tools/apply-v2-backup-ui.py
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -56,7 +59,7 @@ jobs:
       - name: Build recovered source
         run: npm run build
 
-      - name: Commit deterministic source fix only if needed
+      - name: Commit deterministic generated source only if needed
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
@@ -66,5 +69,5 @@ jobs:
             echo 'Recovery source already deterministic.'
             exit 0
           fi
-          git commit -m 'recovery: apply deterministic source fix'
+          git commit -m 'recovery: apply deterministic PocketStomp recovery UI'
           git push origin HEAD:production-v2-source-recovery
