@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  POCKETSTOMP_BACKUP,
+  buildPocketStompBackup,
+  mergePocketStompBackupIntoStorage,
+  parsePocketStompBackupText,
+} from "../lib/pocketstomp-backup.mjs";
 
 const PROFILE_KEY = "pocketstomp.profile.v2";
 const SESSIONS_KEY = "pocketstomp.sessions.v2";
@@ -45,6 +51,19 @@ function readJson(key, fallback) {
 function writeJson(key, value) {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function downloadJsonFile(prefix, payload) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${prefix}-${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function magnitude(source) {
@@ -146,6 +165,7 @@ export default function Home() {
   const [showSimulator, setShowSimulator] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [calibration, setCalibration] = useState({ open: false, step: 0, progress: 0, busy: false, result: null });
+  const [backupBusy, setBackupBusy] = useState(false);
 
   const startTimeRef = useRef(0);
   const timerRef = useRef(null);
@@ -159,6 +179,7 @@ export default function Home() {
   const speedSamplesRef = useRef([]);
   const motionCallbackRef = useRef(null);
   const attachedMotionRef = useRef(null);
+  const backupInputRef = useRef(null);
 
   useEffect(() => {
     const storedProfile = readJson(PROFILE_KEY, null);
@@ -558,6 +579,53 @@ export default function Home() {
     } catch {}
   };
 
+  const exportPocketStompData = () => {
+    setError("");
+    try {
+      const backup = buildPocketStompBackup(localStorage, {
+        appVersion: "1.0.0",
+        platform: navigator.userAgent.includes("CactusByteNative") ? "android-wrapper" : "web",
+        purpose: "user-backup",
+      });
+      downloadJsonFile("pocketstomp-backup", backup);
+      setStatus("PocketStomp backup downloaded. Keep it somewhere you can find after reinstalling.");
+    } catch (reason) {
+      setError(reason?.message || "PocketStomp could not create the backup file.");
+    }
+  };
+
+  const restorePocketStompData = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setError("");
+    setBackupBusy(true);
+    try {
+      if (file.size > POCKETSTOMP_BACKUP.maxBytes) {
+        throw new Error("Backup file is larger than the 5 MB safety limit.");
+      }
+      const backupState = parsePocketStompBackupText(await file.text());
+      const preImport = buildPocketStompBackup(localStorage, {
+        appVersion: "1.0.0",
+        platform: navigator.userAgent.includes("CactusByteNative") ? "android-wrapper" : "web",
+        purpose: "pre-import-safety-backup",
+      });
+      downloadJsonFile("pocketstomp-pre-import", preImport);
+      const merged = mergePocketStompBackupIntoStorage(localStorage, backupState);
+      setProfile(merged.profile);
+      setSessions(Array.isArray(merged.sessions) ? merged.sessions.slice(0, SESSION_LIMIT) : []);
+      setSettings({ ...DEFAULT_SETTINGS, ...(merged.settings || {}) });
+      if (Number.isFinite(merged.profile?.threshold)) {
+        setSensitivity(clamp(merged.profile.threshold, 7, 30));
+      }
+      setStatus(`Backup merged safely. ${merged.sessions?.length || 0} local sessions are available; a pre-import safety backup was downloaded first.`);
+    } catch (reason) {
+      setError(reason?.message || "PocketStomp could not restore that backup.");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   const shareSummary = async () => {
     if (!lastSummary) return;
     const best = lastSummary.bestTrick;
@@ -658,6 +726,10 @@ export default function Home() {
           <section className="card toolsCard">
             <button className="utilityButton" onClick={() => setShowSimulator((value) => !value)}>TESTING SIMULATOR {showSimulator ? "−" : "+"}</button>
             {showSimulator ? <div className="simulator"><p>Generate deterministic test events without pretending they came from the sensors.</p><div><button onClick={() => simulate("Ollie")}>SIM OLLIE</button><button onClick={() => simulate("Kickflip")}>SIM KICKFLIP</button><button onClick={() => simulate("360 Flip")}>SIM 360 FLIP</button><button onClick={() => simulate("Hard Landing")}>SIM HARD LANDING</button></div></div> : null}
+            <p className="tip">Before reinstalling or moving PocketStomp, back up your rider calibration, learned trick corrections, local session archive, and Coach settings.</p>
+            <button className="utilityButton" onClick={exportPocketStompData} disabled={backupBusy}>BACK UP POCKETSTOMP DATA</button>
+            <button className="utilityButton" onClick={() => backupInputRef.current?.click()} disabled={backupBusy}>{backupBusy ? "CHECKING BACKUP…" : "RESTORE / MERGE BACKUP"}</button>
+            <input ref={backupInputRef} type="file" accept="application/json,.json" onChange={restorePocketStompData} style={{ display: "none" }} />
             <button className="utilityButton install" onClick={installApp}>INSTALL POCKETSTOMP</button>
           </section>
         </div> : null}
