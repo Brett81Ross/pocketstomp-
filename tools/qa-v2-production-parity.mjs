@@ -1,6 +1,12 @@
 import fs from 'node:fs';
 
 const page = fs.readFileSync('app/page.js', 'utf8');
+const renderedTextSource = page
+  .replaceAll('&amp;', '&')
+  .replaceAll('&quot;', '"')
+  .replaceAll('&#39;', "'")
+  .replaceAll('&lt;', '<')
+  .replaceAll('&gt;', '>');
 const layout = fs.readFileSync('app/layout.js', 'utf8');
 const manifestText = fs.readFileSync('public/manifest.webmanifest', 'utf8');
 const sw = fs.readFileSync('public/sw.js', 'utf8');
@@ -71,7 +77,7 @@ const requiredPageStrings = [
 ];
 
 for (const marker of requiredPageStrings) {
-  expect(`production UI marker: ${marker}`, page.includes(marker));
+  expect(`production UI marker: ${marker}`, renderedTextSource.includes(marker));
 }
 
 expect('ride tab exists', page.includes('>RIDE<'));
