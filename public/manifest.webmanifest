@@ -1,0 +1,13 @@
+{
+  "name": "PocketStomp Skate Tracker",
+  "short_name": "PocketStomp",
+  "description": "Calibrated skateboard trick, landing, speed and board-motion analytics.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ff1493",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/pocketstomp-icon.png", "sizes": "256x256", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
