@@ -1,0 +1,64 @@
+name: PocketStomp V2 Source Recovery QA
+
+on:
+  push:
+    branches:
+      - production-v2-source-recovery
+    paths:
+      - 'app/**'
+      - 'public/**'
+      - '*.css'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tools/**'
+      - '.github/workflows/v2-source-recovery-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  source-recovery-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v5
+        with:
+          ref: production-v2-source-recovery
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Apply deterministic source fixes
+        run: python tools/apply-v2-recovery-fixes.py
+
+      - name: Run source contract QA
+        run: node tools/qa-v2-source-recovery.mjs
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Resolve pinned dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build recovered source
+        run: npm run build
+
+      - name: Commit deterministic fixes and lockfile only
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/page.js package-lock.json
+          if git diff --cached --quiet; then
+            echo 'Recovery source and lockfile already deterministic.'
+            exit 0
+          fi
+          git commit -m 'recovery: apply deterministic fixes and lock dependencies'
+          git push origin HEAD:production-v2-source-recovery
