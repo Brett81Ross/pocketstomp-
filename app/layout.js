@@ -1,31 +1,31 @@
-import DemoHelp from './DemoHelp';
-import NativeInstall from './NativeInstall';
+import './globals.css';
+
+export const metadata = {
+  title: 'PocketStomp — Skate Session Tracker',
+  description: 'Calibrated trick, landing, speed and board-motion analytics for skateboarders.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/pocketstomp-icon.png',
+    apple: '/pocketstomp-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'PocketStomp',
+    statusBarStyle: 'black-translucent',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#eaff31',
+};
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, padding: 0 }}>
-        {children}
-        <NativeInstall />
-        <DemoHelp />
-        <footer
-          style={{
-            maxWidth: '900px',
-            margin: '18px auto 28px',
-            padding: '18px 16px 0',
-            borderTop: '1px solid rgba(255,255,255,.14)',
-            textAlign: 'center',
-            color: '#a3a3a3',
-            fontSize: '11px',
-            lineHeight: 1.65,
-          }}
-        >
-          <div>© 2026 PocketStomp™ · Demo & Help Release</div>
-          <div>
-            Powered by <strong style={{ color: '#9de3dd', fontWeight: 800 }}>Cactus🌵Byte Studios™</strong> · All Rights Reserved
-          </div>
-        </footer>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
