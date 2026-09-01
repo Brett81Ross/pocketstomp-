@@ -6,6 +6,7 @@ on:
       - production-v2-source-recovery
     paths:
       - 'app/**'
+      - 'lib/**'
       - 'public/**'
       - '*.css'
       - 'package.json'
@@ -35,16 +36,19 @@ jobs:
       - name: Apply deterministic source fixes
         run: python tools/apply-v2-recovery-fixes.py
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: Run source contract QA
         run: node tools/qa-v2-source-recovery.mjs
 
       - name: Run verified-production parity contract
         run: node tools/qa-v2-production-parity.mjs
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      - name: Run backup recovery functional QA
+        run: node tools/qa-v2-backup-recovery.mjs
 
       - name: Install pinned dependencies
         run: npm ci --no-audit --no-fund
