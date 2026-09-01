@@ -157,7 +157,8 @@ export default function Home() {
   const maxSpeedRef = useRef(0);
   const verticalRef = useRef(0);
   const speedSamplesRef = useRef([]);
-  const motionHandlerRef = useRef(null);
+  const motionCallbackRef = useRef(null);
+  const attachedMotionRef = useRef(null);
 
   useEffect(() => {
     const storedProfile = readJson(PROFILE_KEY, null);
@@ -295,11 +296,14 @@ export default function Home() {
   }, [addDetectedTrick, profile?.popPeak, sensitivity, tracking]);
 
   useEffect(() => {
-    motionHandlerRef.current = handleMotion;
+    motionCallbackRef.current = handleMotion;
   }, [handleMotion]);
 
   const stopRuntimeListeners = useCallback(() => {
-    if (motionHandlerRef.current) window.removeEventListener("devicemotion", motionHandlerRef.current);
+    if (attachedMotionRef.current) {
+      window.removeEventListener("devicemotion", attachedMotionRef.current);
+      attachedMotionRef.current = null;
+    }
     if (watchRef.current !== null && "geolocation" in navigator) {
       navigator.geolocation.clearWatch(watchRef.current);
       watchRef.current = null;
@@ -332,8 +336,8 @@ export default function Home() {
       setTracking(true);
       setStatus("LIVE — phone motion tracking active.");
 
-      const listener = (event) => motionHandlerRef.current?.(event);
-      motionHandlerRef.current = listener;
+      const listener = (event) => motionCallbackRef.current?.(event);
+      attachedMotionRef.current = listener;
       window.addEventListener("devicemotion", listener, { passive: true });
 
       timerRef.current = setInterval(() => {
